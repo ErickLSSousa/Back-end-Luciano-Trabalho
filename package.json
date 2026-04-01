@@ -6,7 +6,8 @@
   "scripts": {
     
     "dev": "node src/server.js",
-    "check": "node --check src/server.js"
+    "check": "node --check src/server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "codex": "^0.2.3",
