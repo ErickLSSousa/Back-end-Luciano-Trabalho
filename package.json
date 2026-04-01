@@ -1,4 +1,5 @@
 {
+
   "name": "senaibank-api",
   "version": "1.0.0",
   "description": "API bancária para desafio Senaibank",
@@ -7,5 +8,7 @@
     "start": "node src/server.js",
     "dev": "node src/server.js",
     "check": "node --check src/server.js"
+  "dependencies": {
+    "codex": "^0.2.3"
   }
 }
