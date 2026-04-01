@@ -4,7 +4,7 @@
   "description": "API bancária para desafio Senaibank",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
+    
     "dev": "node src/server.js",
     "check": "node --check src/server.js"
   },
