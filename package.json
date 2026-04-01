@@ -9,6 +9,9 @@
     "check": "node --check src/server.js"
   },
   "dependencies": {
-    "codex": "^0.2.3"
+    "codex": "^0.2.3",
+    "index.js": "^0.0.3",
+    "node": "^25.8.2",
+    "node.js": "^0.0.1-security"
   }
 }
