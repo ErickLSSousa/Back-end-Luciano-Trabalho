@@ -24,10 +24,16 @@ const createAccount = ({ fullName, cpf, email, phone }) => {
 
 const deleteAccount = (accountNumber) => accounts.delete(String(accountNumber));
 
+const resetStore = () => {
+  accounts.clear();
+  nextAccountNumber = 1001;
+};
+
 module.exports = {
   getAllAccounts,
   getAccount,
   cpfExists,
   createAccount,
-  deleteAccount
+  deleteAccount,
+  resetStore
 };
