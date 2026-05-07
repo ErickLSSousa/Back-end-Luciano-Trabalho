@@ -1,3 +1,8 @@
+// routes/accountRoutes.js
+// Define todas as rotas relacionadas a contas bancárias.
+// Usa o Router do Express — cada rota aponta para um controller específico.
+
+const { Router } = require('express');
 const {
   getAccounts,
   createAccount,
@@ -9,36 +14,35 @@ const {
   showBalance,
   showStatement
 } = require('../controllers/accountController');
-const { sendJson } = require('../utils/http');
 
-const notFound = (res) => sendJson(res, 404, { error: 'Rota não encontrada.' });
+const router = Router();
 
-const routeRequest = async (req, res, path) => {
-  const method = req.method;
+// GET /accounts — lista todas as contas bancárias
+router.get('/', getAccounts);
 
-  if (method === 'GET' && path === '/accounts') return getAccounts(req, res);
-  if (method === 'POST' && path === '/accounts') return createAccount(req, res);
-  if (method === 'POST' && path === '/accounts/transfer') return createTransfer(req, res);
+// POST /accounts — cria uma nova conta bancária
+router.post('/', createAccount);
 
-  const accountMatch = path.match(/^\/accounts\/(\d+)$/);
-  if (accountMatch && method === 'PUT') return editAccount(req, res, accountMatch[1]);
-  if (accountMatch && method === 'DELETE') return deleteAccount(req, res, accountMatch[1]);
+// PUT /accounts/:accountNumber — atualiza dados pessoais de uma conta
+router.put('/:accountNumber', editAccount);
 
-  const depositMatch = path.match(/^\/accounts\/(\d+)\/deposit$/);
-  if (depositMatch && method === 'POST') return createDeposit(req, res, depositMatch[1]);
+// DELETE /accounts/:accountNumber — remove uma conta bancária
+router.delete('/:accountNumber', deleteAccount);
 
-  const withdrawMatch = path.match(/^\/accounts\/(\d+)\/withdraw$/);
-  if (withdrawMatch && method === 'POST') return createWithdraw(req, res, withdrawMatch[1]);
+// POST /accounts/:accountNumber/deposit — realiza um depósito na conta
+router.post('/:accountNumber/deposit', createDeposit);
 
-  const balanceMatch = path.match(/^\/accounts\/(\d+)\/balance$/);
-  if (balanceMatch && method === 'GET') return showBalance(req, res, balanceMatch[1]);
+// POST /accounts/:accountNumber/withdraw — realiza um saque da conta
+router.post('/:accountNumber/withdraw', createWithdraw);
 
-  const statementMatch = path.match(/^\/accounts\/(\d+)\/statement$/);
-  if (statementMatch && method === 'GET') return showStatement(req, res, statementMatch[1]);
+// POST /accounts/transfer — transfere entre duas contas
+// ATENÇÃO: esta rota deve ficar ANTES de /:accountNumber para não ser capturada como ID
+router.post('/transfer', createTransfer);
 
-  return notFound(res);
-};
+// GET /accounts/:accountNumber/balance — consulta o saldo da conta
+router.get('/:accountNumber/balance', showBalance);
 
-module.exports = {
-  routeRequest
-};
+// GET /accounts/:accountNumber/statement — consulta o extrato da conta
+router.get('/:accountNumber/statement', showStatement);
+
+module.exports = router;

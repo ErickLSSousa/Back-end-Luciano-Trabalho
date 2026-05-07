@@ -1,3 +1,7 @@
+// services/accountService.js
+// Contém toda a lógica de negócio relacionada a contas bancárias e transações.
+// Cada função retorna { data } em caso de sucesso ou { error: { status, message } } em caso de falha.
+
 const {
   getAllAccounts,
   getAccount,
@@ -6,13 +10,24 @@ const {
   deleteAccount
 } = require('../data/accountStore');
 
+const { createAccountSchema, updateAccountSchema } = require('../validations/userSchema');
+const { transactionSchema, transferSchema } = require('../validations/transactionSchema');
+
+// Retorna todas as contas cadastradas
 const listAccounts = () => getAllAccounts();
 
-const openAccount = ({ fullName, cpf, email, phone }) => {
-  if (!fullName || !cpf || !email || !phone) {
-    return { error: { status: 400, message: 'Campos obrigatórios: fullName, cpf, email, phone.' } };
+// Cria uma nova conta após validar os campos com o schema Zod
+const openAccount = (body) => {
+  // safeParse valida sem lançar exceção — retorna success/error
+  const parsed = createAccountSchema.safeParse(body);
+  if (!parsed.success) {
+    const message = parsed.error.errors.map((e) => e.message).join(' | ');
+    return { error: { status: 400, message } };
   }
 
+  const { fullName, cpf, email, phone } = parsed.data;
+
+  // CPF duplicado não é permitido
   if (cpfExists(cpf)) {
     return { error: { status: 409, message: 'Já existe conta para este CPF.' } };
   }
@@ -20,21 +35,23 @@ const openAccount = ({ fullName, cpf, email, phone }) => {
   return { data: createAccount({ fullName, cpf, email, phone }) };
 };
 
-const updateAccount = (accountNumber, { fullName, email, phone }) => {
+// Atualiza os dados pessoais de uma conta existente
+const updateAccount = (accountNumber, body) => {
   const account = getAccount(accountNumber);
   if (!account) {
     return { error: { status: 404, message: 'Conta não encontrada.' } };
   }
 
-  if (!fullName && !email && !phone) {
-    return {
-      error: {
-        status: 400,
-        message: 'Informe ao menos um campo para atualizar: fullName, email, phone.'
-      }
-    };
+  // Valida os campos enviados — ao menos um deve estar presente
+  const parsed = updateAccountSchema.safeParse(body);
+  if (!parsed.success) {
+    const message = parsed.error.errors.map((e) => e.message).join(' | ');
+    return { error: { status: 400, message } };
   }
 
+  const { fullName, email, phone } = parsed.data;
+
+  // Atualiza apenas os campos que foram enviados
   if (fullName) account.fullName = fullName;
   if (email) account.email = email;
   if (phone) account.phone = phone;
@@ -42,6 +59,7 @@ const updateAccount = (accountNumber, { fullName, email, phone }) => {
   return { data: account };
 };
 
+// Remove uma conta pelo número
 const removeAccount = (accountNumber) => {
   const account = getAccount(accountNumber);
   if (!account) {
@@ -52,19 +70,29 @@ const removeAccount = (accountNumber) => {
   return { data: null };
 };
 
+// Realiza um depósito na conta informada
 const deposit = (accountNumber, amount) => {
   const account = getAccount(accountNumber);
   if (!account) {
     return { error: { status: 404, message: 'Conta não encontrada.' } };
   }
 
-  const value = Number(amount);
-  if (!Number.isFinite(value) || value <= 0) {
-    return { error: { status: 400, message: 'Valor de depósito inválido.' } };
+  // Converte para número antes de validar (o body pode vir como string)
+  const parsed = transactionSchema.safeParse({ amount: Number(amount) });
+  if (!parsed.success) {
+    const message = parsed.error.errors.map((e) => e.message).join(' | ');
+    return { error: { status: 400, message } };
   }
 
+  const value = parsed.data.amount;
+
+  // Adiciona o valor ao saldo e registra no extrato
   account.balance += value;
-  account.statement.push({ type: 'DEPOSIT', amount: value, date: new Date().toISOString() });
+  account.statement.push({
+    type: 'DEPOSIT',
+    amount: value,
+    date: new Date().toISOString()
+  });
 
   return {
     data: {
@@ -74,23 +102,32 @@ const deposit = (accountNumber, amount) => {
   };
 };
 
+// Realiza um saque da conta informada
 const withdraw = (accountNumber, amount) => {
   const account = getAccount(accountNumber);
   if (!account) {
     return { error: { status: 404, message: 'Conta não encontrada.' } };
   }
 
-  const value = Number(amount);
-  if (!Number.isFinite(value) || value <= 0) {
-    return { error: { status: 400, message: 'Valor de saque inválido.' } };
+  const parsed = transactionSchema.safeParse({ amount: Number(amount) });
+  if (!parsed.success) {
+    const message = parsed.error.errors.map((e) => e.message).join(' | ');
+    return { error: { status: 400, message } };
   }
 
+  const value = parsed.data.amount;
+
+  // Verifica se há saldo suficiente antes de debitar
   if (account.balance < value) {
     return { error: { status: 400, message: 'Saldo insuficiente.' } };
   }
 
   account.balance -= value;
-  account.statement.push({ type: 'WITHDRAW', amount: value, date: new Date().toISOString() });
+  account.statement.push({
+    type: 'WITHDRAW',
+    amount: value,
+    date: new Date().toISOString()
+  });
 
   return {
     data: {
@@ -100,7 +137,21 @@ const withdraw = (accountNumber, amount) => {
   };
 };
 
-const transfer = ({ fromAccountNumber, toAccountNumber, amount }) => {
+// Transfere um valor entre duas contas diferentes
+const transfer = (body) => {
+  // Valida origem, destino e valor com o transferSchema
+  const parsed = transferSchema.safeParse({
+    fromAccountNumber: body.fromAccountNumber,
+    toAccountNumber: body.toAccountNumber,
+    amount: Number(body.amount)
+  });
+  if (!parsed.success) {
+    const message = parsed.error.errors.map((e) => e.message).join(' | ');
+    return { error: { status: 400, message } };
+  }
+
+  const { fromAccountNumber, toAccountNumber, amount } = parsed.data;
+
   const from = getAccount(fromAccountNumber);
   const to = getAccount(toAccountNumber);
 
@@ -108,30 +159,41 @@ const transfer = ({ fromAccountNumber, toAccountNumber, amount }) => {
     return { error: { status: 404, message: 'Conta de origem ou destino não encontrada.' } };
   }
 
+  // Impede transferência para a própria conta
   if (from.accountNumber === to.accountNumber) {
     return {
       error: {
         status: 400,
-        message: 'A conta de origem deve ser diferente da conta de destino.'
+        message: 'Conta de origem deve ser diferente da conta de destino.'
       }
     };
   }
 
-  const value = Number(amount);
-  if (!Number.isFinite(value) || value <= 0) {
-    return { error: { status: 400, message: 'Valor de transferência inválido.' } };
-  }
-
-  if (from.balance < value) {
+  if (from.balance < amount) {
     return { error: { status: 400, message: 'Saldo insuficiente para transferência.' } };
   }
 
-  from.balance -= value;
-  to.balance += value;
-
   const date = new Date().toISOString();
-  from.statement.push({ type: 'TRANSFER_OUT', amount: value, toAccountNumber: to.accountNumber, date });
-  to.statement.push({ type: 'TRANSFER_IN', amount: value, fromAccountNumber: from.accountNumber, date });
+
+  // Débita da origem e credita no destino
+  from.balance -= amount;
+  to.balance += amount;
+
+  // Registra a saída no extrato da conta de origem
+  from.statement.push({
+    type: 'TRANSFER_OUT',
+    amount,
+    toAccountNumber: to.accountNumber,
+    date
+  });
+
+  // Registra a entrada no extrato da conta de destino
+  to.statement.push({
+    type: 'TRANSFER_IN',
+    amount,
+    fromAccountNumber: from.accountNumber,
+    date
+  });
 
   return {
     data: {
@@ -142,6 +204,7 @@ const transfer = ({ fromAccountNumber, toAccountNumber, amount }) => {
   };
 };
 
+// Retorna o saldo atual da conta
 const getBalance = (accountNumber) => {
   const account = getAccount(accountNumber);
   if (!account) {
@@ -156,6 +219,7 @@ const getBalance = (accountNumber) => {
   };
 };
 
+// Retorna o extrato completo (histórico de transações) da conta
 const getStatement = (accountNumber) => {
   const account = getAccount(accountNumber);
   if (!account) {

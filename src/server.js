@@ -1,30 +1,15 @@
-const http = require("http");
-const { routeRequest } = require("./routes/accountRoutes");
-const { sendJson } = require("./utils/http");
+// server.js
+// Ponto de entrada da aplicação.
+// Importa o app configurado e sobe o servidor HTTP na porta definida.
 
-function createServer() {
-  return http.createServer(async (req, res) => {
-    try {
-      await routeRequest(req, res);
-    } catch (error) {
-      handleError(res, error);
-    }
-  });
-}
+const app = require('./app');
 
-function handleError(res, error) {
-  const statusCode = error.statusCode || 500;
-
-  sendJson(res, statusCode, {
-    error: error.message || "Erro interno do servidor",
-  });
-}
-
+// Porta do servidor: usa variável de ambiente ou 3000 como padrão
 const PORT = process.env.PORT || 3000;
-const server = createServer();
 
-server.listen(PORT, () => {
-  console.log("✅ SenaiBank API iniciada");
+// Inicia o servidor e exibe informações no console
+app.listen(PORT, () => {
+  console.log('✅ SenaiBank API iniciada');
   console.log(`🌐 Porta: ${PORT}`);
-  console.log(`📦 Ambiente: ${process.env.NODE_ENV || "development"}`);
+  console.log(`📦 Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });

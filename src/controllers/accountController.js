@@ -1,3 +1,7 @@
+// controllers/accountController.js
+// Recebe as requisições HTTP de contas bancárias e delega ao accountService.
+// handleResult centraliza o envio de resposta para evitar repetição de código.
+
 const {
   listAccounts,
   openAccount,
@@ -9,60 +13,65 @@ const {
   getBalance,
   getStatement
 } = require('../services/accountService');
-const { sendJson, sendNoContent } = require('../utils/http');
-const { parseBody } = require('../utils/parseBody');
 
+// Função auxiliar: verifica se o service retornou erro ou sucesso e responde adequadamente.
+// noContent = true envia status 204 (sem corpo) — usado no DELETE.
 const handleResult = (res, result, noContent = false) => {
   if (result.error) {
-    return sendJson(res, result.error.status, { error: result.error.message });
+    // Retorna o código de status específico do erro (400, 404, 409, etc.)
+    return res.status(result.error.status).json({ error: result.error.message });
   }
 
   if (noContent) {
-    return sendNoContent(res);
+    // 204 No Content — resposta de sucesso sem corpo (padrão para DELETE)
+    return res.status(204).send();
   }
 
-  return sendJson(res, 200, result.data);
+  return res.status(200).json(result.data);
 };
 
-const getAccounts = (req, res) => sendJson(res, 200, listAccounts());
+// GET /accounts — lista todas as contas
+const getAccounts = (req, res) => res.status(200).json(listAccounts());
 
-const createAccount = async (req, res) => {
-  const body = await parseBody(req);
-  const result = openAccount(body);
+// POST /accounts — cria uma nova conta com os dados do body
+const createAccount = (req, res) => {
+  const result = openAccount(req.body);
 
   if (result.error) {
-    return sendJson(res, result.error.status, { error: result.error.message });
+    return res.status(result.error.status).json({ error: result.error.message });
   }
 
-  return sendJson(res, 201, result.data);
+  // 201 Created — recurso novo foi criado com sucesso
+  return res.status(201).json(result.data);
 };
 
-const editAccount = async (req, res, accountNumber) => {
-  const body = await parseBody(req);
-  return handleResult(res, updateAccount(accountNumber, body));
-};
+// PUT /accounts/:accountNumber — atualiza dados pessoais da conta
+const editAccount = (req, res) =>
+  handleResult(res, updateAccount(req.params.accountNumber, req.body));
 
-const deleteAccount = (req, res, accountNumber) =>
-  handleResult(res, removeAccount(accountNumber), true);
+// DELETE /accounts/:accountNumber — remove a conta (204 sem corpo)
+const deleteAccount = (req, res) =>
+  handleResult(res, removeAccount(req.params.accountNumber), true);
 
-const createDeposit = async (req, res, accountNumber) => {
-  const { amount } = await parseBody(req);
-  return handleResult(res, deposit(accountNumber, amount));
-};
+// POST /accounts/:accountNumber/deposit — deposita um valor na conta
+const createDeposit = (req, res) =>
+  handleResult(res, deposit(req.params.accountNumber, req.body.amount));
 
-const createWithdraw = async (req, res, accountNumber) => {
-  const { amount } = await parseBody(req);
-  return handleResult(res, withdraw(accountNumber, amount));
-};
+// POST /accounts/:accountNumber/withdraw — saca um valor da conta
+const createWithdraw = (req, res) =>
+  handleResult(res, withdraw(req.params.accountNumber, req.body.amount));
 
-const createTransfer = async (req, res) => {
-  const body = await parseBody(req);
-  return handleResult(res, transfer(body));
-};
+// POST /accounts/transfer — transfere entre duas contas
+const createTransfer = (req, res) =>
+  handleResult(res, transfer(req.body));
 
-const showBalance = (req, res, accountNumber) => handleResult(res, getBalance(accountNumber));
+// GET /accounts/:accountNumber/balance — retorna o saldo atual
+const showBalance = (req, res) =>
+  handleResult(res, getBalance(req.params.accountNumber));
 
-const showStatement = (req, res, accountNumber) => handleResult(res, getStatement(accountNumber));
+// GET /accounts/:accountNumber/statement — retorna o extrato completo
+const showStatement = (req, res) =>
+  handleResult(res, getStatement(req.params.accountNumber));
 
 module.exports = {
   getAccounts,
