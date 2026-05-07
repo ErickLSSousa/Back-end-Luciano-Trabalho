@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const userRepository = require('../repositories/userRepository');
 const { createAccountSchema, loginSchema } = require('../validations/userSchema');
+const accountRepository = require('../repositories/accountRepository');
 
 // Registra um novo usuário após validar os dados e hashear a senha.
 // Lança um erro se o e-mail já estiver em uso ou se os dados forem inválidos.
@@ -36,13 +37,27 @@ async function register(body) {
 
   // Salva o usuário sem a senha em texto puro
   const user = userRepository.create({
-    id: String(Date.now()), // ID simples baseado em timestamp
-    fullName,
-    cpf,
-    email,
-    phone,
-    password: hashedPassword,
-  });
+  id: String(Date.now()),
+  fullName,
+  cpf,
+  email,
+  phone,
+  password: hashedPassword,
+});
+
+accountRepository.create({
+  id: String(Date.now() + 1),
+  userId: user.id,
+  agency: '0001',
+  accountNumber: String(
+    Math.floor(10000 + Math.random() * 90000)
+  ),
+  balance: 0,
+  statement: [],
+});
+
+const { password: _, ...userWithoutPassword } = user;
+return userWithoutPassword;
 
   // Retorna o usuário sem expor a senha na resposta
   const { password: _, ...userWithoutPassword } = user;
