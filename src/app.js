@@ -1,32 +1,25 @@
-
 const express = require('express')
 const cors = require('cors')
 
 const authRoutes = require('./routes/authRoutes')
 const accountRoutes = require('./routes/accountRoutes')
 const transactionRoutes = require('./routes/transactionRoutes')
+const pixRoutes = require('./routes/pixRoutes')
 
-const { errorMiddleware } = require('./middlewares/errorMiddleware')
+const authMiddleware = require('./middlewares/authMiddleware')
 
 const app = express()
 
-app.use(cors({ origin: '*' }))
+app.use(cors())
 app.use(express.json())
 
+app.use('/auth', authRoutes)
+app.use('/accounts', authMiddleware, accountRoutes)
+app.use('/transactions', authMiddleware, transactionRoutes)
+app.use('/pix', authMiddleware, pixRoutes)
 
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    service: 'SenaiBank API',
-    timestamp: new Date().toISOString()
-  })
+  res.json({ status: 'ok' })
 })
-
-
-app.use('/auth', authRoutes)
-app.use('/accounts', accountRoutes)
-app.use('/transactions', transactionRoutes)
-
-app.use(errorMiddleware)
 
 module.exports = app

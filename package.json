@@ -2,10 +2,10 @@
   "name": "senaibank-api",
   "version": "1.0.0",
   "description": "API bancária para desafio Senaibank",
-  "main": "src/server.js",
+  "main": "server.js",
   "scripts": {
-    "dev": "node src/server.js",
-    "check": "node --check src/server.js",
+    "dev": "node server.js",
+    "check": "node --check server.js",
     "test": "node --test"
   },
   "dependencies": {
@@ -13,6 +13,7 @@
     "codex": "^0.2.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.1",
     "index.js": "^0.0.3",
     "jsonwebtoken": "^9.0.3",
     "node": "^25.8.2",
