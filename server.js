@@ -1,8 +1,4 @@
-// server.js
-// Ponto de entrada da aplicação.
-// Importa o app configurado e sobe o servidor HTTP na porta definida.
-
-const app = require('./app');
+const app = require('./src/app');
 
 // Porta do servidor: usa variável de ambiente ou 3000 como padrão
 const PORT = process.env.PORT || 3000;

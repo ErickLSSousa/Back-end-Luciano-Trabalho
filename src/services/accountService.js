@@ -1,6 +1,3 @@
-// services/accountService.js
-// Contém toda a lógica de negócio relacionada a contas bancárias e transações.
-// Cada função retorna { data } em caso de sucesso ou { error: { status, message } } em caso de falha.
 
 const {
   getAllAccounts,
@@ -13,12 +10,9 @@ const {
 const { createAccountSchema, updateAccountSchema } = require('../validations/userSchema');
 const { transactionSchema, transferSchema } = require('../validations/transactionSchema');
 
-// Retorna todas as contas cadastradas
 const listAccounts = () => getAllAccounts();
 
-// Cria uma nova conta após validar os campos com o schema Zod
 const openAccount = (body) => {
-  // safeParse valida sem lançar exceção — retorna success/error
   const parsed = createAccountSchema.safeParse(body);
   if (!parsed.success) {
     const message = parsed.error.errors.map((e) => e.message).join(' | ');
@@ -27,7 +21,6 @@ const openAccount = (body) => {
 
   const { fullName, cpf, email, phone } = parsed.data;
 
-  // CPF duplicado não é permitido
   if (cpfExists(cpf)) {
     return { error: { status: 409, message: 'Já existe conta para este CPF.' } };
   }
@@ -35,14 +28,12 @@ const openAccount = (body) => {
   return { data: createAccount({ fullName, cpf, email, phone }) };
 };
 
-// Atualiza os dados pessoais de uma conta existente
 const updateAccount = (accountNumber, body) => {
   const account = getAccount(accountNumber);
   if (!account) {
     return { error: { status: 404, message: 'Conta não encontrada.' } };
   }
 
-  // Valida os campos enviados — ao menos um deve estar presente
   const parsed = updateAccountSchema.safeParse(body);
   if (!parsed.success) {
     const message = parsed.error.errors.map((e) => e.message).join(' | ');
@@ -219,20 +210,19 @@ const getBalance = (accountNumber) => {
   };
 };
 
-// Retorna o extrato completo (histórico de transações) da conta
 const getStatement = (accountNumber) => {
-  const account = getAccount(accountNumber);
+  const account = getAccount(accountNumber)
   if (!account) {
-    return { error: { status: 404, message: 'Conta não encontrada.' } };
+    return { error: { status: 404, message: 'Conta não encontrada.' } }
   }
 
   return {
     data: {
-      accountNumber: account.accountNumber,
-      statement: account.statement
+      accountNumber,
+      statement: account.statement || []
     }
-  };
-};
+  }
+}
 
 module.exports = {
   listAccounts,
