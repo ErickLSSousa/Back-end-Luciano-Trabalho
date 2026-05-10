@@ -28,4 +28,20 @@ model Account {
 
   fullName String
   email    String
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  type        String
+  amount      Float
+  description String?
+  createdAt   DateTime @default(now())
+
+  accountId         Int
+  account           Account @relation(fields: [accountId], references: [id])
+
+  toAccountNumber   String?
+  fromAccountNumber String?
 }
