@@ -1,18 +1,22 @@
-const accounts = []
+const { PrismaClient } = require('@prisma/client')
+const prisma = new PrismaClient()
 
-function createAccount(account) {
-  accounts.push(account)
-  return account
+async function createAccount(account) {
+  return prisma.account.create({ data: account })
 }
 
-function getAccountsByUserId(userId) {
-  return accounts.filter(account => account.userId === userId)
+async function getAccountsByUserId(userId) {
+  const result = await prisma.account.findMany({
+    where: { userId: Number(userId) }
+  })
+  console.log('[repo] userId:', userId, '| contas:', result)
+  return result
 }
 
-function getAccountByNumber(accountNumber) {
-  return accounts.find(
-    account => account.accountNumber === accountNumber
-  )
+async function getAccountByNumber(accountNumber) {
+  return prisma.account.findUnique({
+    where: { accountNumber }
+  })
 }
 
 module.exports = {

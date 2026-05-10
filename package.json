@@ -9,16 +9,15 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "bcrypt": "^6.0.0",
-    "codex": "^0.2.3",
     "cors": "^2.8.6",
-    "express": "^5.2.1",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
     "express-rate-limit": "^8.5.1",
-    "index.js": "^0.0.3",
     "jsonwebtoken": "^9.0.3",
-    "node": "^25.8.2",
-    "node.js": "^0.0.1-security",
     "nodemon": "^3.1.14",
+    "prisma": "^6.19.3",
     "zod": "^4.4.3"
   }
 }
